@@ -29,7 +29,7 @@ Can't win 'em all.
 
 ### Oh god not another slice-to-array library
 
-Hey hey hey, hold on here! This is **not** a slice-to-array library. It is an **array _of_ slice** library!  Everybody and their mother has published their own crate for converting between `&[T]` and `&[T; n]` on crates.io, but **only** `slice-of-array`™ lets you convert between `&[T]` and `&[[T; n]]`.
+Hey hey hey, hold on here! This is **not** a slice-to-array library. It is a **slice _of_ array** library!  Everybody and their mother has published their own crate for converting between `&[T]` and `&[T; n]` on crates.io, but **only** `slice-of-array`™ lets you convert between `&[T]` and `&[[T; n]]`.
 
 That said... uh, yes, one of its features is indeed casting slices to arrays.  I'm sorry.
 
