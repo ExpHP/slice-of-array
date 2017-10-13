@@ -9,7 +9,7 @@ slice-of-array = "0.1"
 
 ```rust
 extern crate slice_of_array;
-use slice_of_array::prelude::*;
+use ::slice_of_array::prelude::*;
 
 let vec = vec![[1, 0], [0, 1]];
 let _: &[i32] = vec.flat();
