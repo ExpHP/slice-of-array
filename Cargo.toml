@@ -1,6 +1,6 @@
 [package]
 name = "slice-of-array"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Michael Lamparski <diagonaldevice@gmail.com>"]
 documentation = "https://docs.rs/slice-of-array"
 repository = "https://github.com/ExpHP/slice-of-array"
