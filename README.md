@@ -17,7 +17,9 @@ let _: &[[[i32; 2]; 1]] = vec.nest();
 let _: &[[i32; 2]; 2] = vec.as_array();
 ```
 
-Now you can use types like `&[[f64; 3]]` in your public interfaces without fear! You'll be able to flatten that stuff just fine when delagating work to (insert your favorite linear algebra library here), and everybody using your library will have no problem creating the necessary slice types to use your interface.
+**Use types like `&[[f64; 3]]` in your public interfaces without fear!**
+
+You'll be able to flatten that stuff just fine when delagating work to (insert your favorite linear algebra library here), and everybody using your library will have no problem creating the necessary slice types to use your interface.
 
 ...uh, that is, assuming that they also have found this crate.
 
