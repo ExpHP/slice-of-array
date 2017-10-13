@@ -1,18 +1,38 @@
 #![doc(html_root_url = "https://docs.rs/slice-of-array/0.1.0")]
 
-//! Traits for viewing a flat slice as a slice of arrays or vice versa.
+//! Extension traits for viewing a slice as a slice of arrays or vice versa.
 //!
-//! The fundamental tools provided are:
+//! Provides the following methods on `[T]`:
 //!
-//!  * **`nest`**: convert `&[T]` to `&[[T; n]]`
-//!  * **`flat`**: convert `&[[T; n]]` to `&[T]`
-//!  * **`as_array`**: convert `&[T]` to `&[T; n]` (the reverse is
+//!  * **[`nest`]**: `&[T] -> &[[T; n]]`
+//!  * **[`flat`]**: `&[[T; n]] -> &[T]`
+//!  * **[`as_array`]**: `&[T] -> &[T; n]` (the reverse is
 //!    already provided by a coercion)
+//!  * **`nest_mut`, `flat_mut`, `as_mut_array`** for `&mut [_]`.
 //!
 //! Altogether, these let you swap between arbitrary representations
 //! of contiguous, `T`-aligned streams of `T` data.  For instance,
 //! to view a `[[i32; 6]; 5]` as a `&[[[i32; 3]; 2]; 5]`,
-//! one could write `x.flat().flat().nest().nest().as_array()`.
+//! one could write
+//!
+//! ```
+//! # // FIXME: Dumb/confusing example. I actually wrote it wrong
+//! # //        the first time, calling `flat()` twice because it
+//! # //        didn't occur to me that the outer '; 5' is already
+//! # //        automatically eliminated by coercion.
+//! # //
+//! # //        Almost makes a case for providing `.as_slice()`
+//! # //        as an explicit form of this coercion.
+//! #
+//! # use ::slice_of_array::prelude::*;
+//! # let _ = || {
+//! #     let x: [[i32; 6]; 5] = unimplemented!();
+//! #     let _: &[[[i32; 3]; 2]; 5] =
+//! x.flat().nest().nest().as_array()
+//! #     ;
+//! # };
+//! ```
+//!
 //! Type inference generally works quite well, and as long as the
 //! final shape is unambiguous there is no need to annotate types
 //! in the middle of the method chain.
@@ -22,6 +42,7 @@
 //!
 //! ```
 //! use ::slice_of_array::prelude::*;
+//!
 //! let vec = vec![[2i32, 2, 2], [7, 7, 7], [4, 4, 4], [1, 1, 1]];
 //! assert_eq!(vec.flat(), &[2, 2, 2, 7, 7, 7, 4, 4, 4, 1, 1, 1]);
 //!
@@ -30,7 +51,7 @@
 //! assert_eq!(slc, &[[[2i32, 2, 2], [7, 7, 7]], [[ 4, 4, 4], [1, 1, 1]]]);
 //! ```
 //!
-//! `nest` and `as_array` panic on failure rather than returning options.
+//! [`nest`] and [`as_array`] panic on failure rather than returning options.
 //! The rationale is that it is believed that these these conversions are
 //! seldom needed on arbitrary user data which may be the wrong size; rather,
 //! they are most likely used when bridging the gap between APIs that work
@@ -50,6 +71,10 @@
 //! let flattened = vec.flat().to_vec();
 //! assert_eq!(flattened, vec![2i32, 2, 2, 7, 7, 7]);
 //! ```
+//!
+//! [`nest`]: trait.SliceNestExt.html#tymethod.nest
+//! [`flat`]: trait.SliceFlatExt.html#tymethod.flat
+//! [`as_array`]: trait.SliceArrayExt.html#tymethod.as_array
 
 #[cfg(test)]
 #[macro_use]
@@ -71,8 +96,17 @@ pub mod prelude {
 /// Having `.flat().nest()` turn a `&[[i32; 0]]` of length 18
 /// into a `&[[i32; 0]]` of length 0 gives me the heebie jeebies.
 ///
-/// Unsafe because unsafe code relies on a number of properties of
-/// arrays for any type that implements this trait.
+/// # Safety
+///
+/// Unsafe code relies on a number of properties of arrays for any
+/// type that implements this trait.  These properties are left
+/// unspecified and may change on a whim.
+///
+/// # Notice
+///
+/// **Please do NOT use this trait as a generic bound in your code.**
+///
+/// In fact, I would rather you copied and pasted it into your own code.
 pub unsafe trait IsSliceomorphic: Sized {
     type Element;
     fn array_len() -> usize;
@@ -108,29 +142,81 @@ fn validate_some_assumptions<V: IsSliceomorphic>() {
         size_of::<V>());
 }
 
-/// Trait for viewing a slice of arrays as a flat slice, without copying.
+/// Permits viewing a slice of arrays as a flat slice.
+///
+/// # Implementors
+///
+/// The methods are available on `&[[T; n]]` and `&mut [[T; n]]`
+/// for all `T`, and `1 <= n <= 32`.  Of course, they are also
+/// available on `Vec<[T; n]>` and any other type that derefs
+/// or unsizes to `[[T; n]]`.
+///
+/// # Notice
+///
+/// The existence of this trait is an implementation detail.
+///
+/// **Please do NOT use this trait as a generic bound in your code.**
 pub trait SliceFlatExt<T> {
-    /// View `&[[T; n]]` as `&[T]`
+    /// View `&[[T; n]]` as `&[T]`.
     fn flat(&self) -> &[T];
+
     /// View `&mut [[T; n]]` as `&mut [T]`
     fn flat_mut(&mut self) -> &mut [T];
 }
 
-/// Trait for viewing a slice as a slice of arrays, without copying.
+/// Permits viewing a slice as a slice of arrays.
+///
+/// The new array dimension can often be inferred.
+/// When it is not, a turbofish can be used: `.nest::<[_; 3]>()`.
+///
+/// # Panics
+///
+/// All methods panic if the input length is not divisible by `n`.
+///
+/// # Implementors
+///
+/// The methods are available on `&[T]` and `&mut [T]` for all `T`.
+/// Of course, they are also available on `Vec<T>` and any other type
+/// that derefs or unsizes to `[T]`.
+///
+/// # Notice
+///
+/// The existence of this trait is an implementation detail.
+///
+/// **Please do NOT use this trait as a generic bound in your code.**
 pub trait SliceNestExt<T> {
-    /// View `&[T]` as `&[[T;n]]` without copying, panicking on bad input lengths.
+    /// View `&[T]` as `&[[T;n]]` without copying.
     fn nest<V: IsSliceomorphic<Element=T>>(&self) -> &[V];
-    /// View `&mut [T]` as `&mut [[T;n]]` without copying, panicking on bad input lengths.
+
+    /// View `&mut [T]` as `&mut [[T;n]]` without copying.
     fn nest_mut<V: IsSliceomorphic<Element=T>>(&mut self) -> &mut [V];
 }
 
-/// Trait for viewing a slice as an array of known size, without copying.
+/// Permits viewing a slice as an array.
 ///
-/// The reverse is already provided by a coercion.
+/// The output array length can often be inferred.
+/// When it is not, a turbofish can be used: `.as_array::<[_; 3]>()`.
+///
+/// # Panics
+///
+/// All methods panic if the slice is not exactly the requested length.
+///
+/// # Implementors
+///
+/// The methods are available on `&[T]` and `&mut [T]` for all `T`.
+/// Of course, they are also available on `Vec<T>` and any other type
+/// that derefs or unsizes to `[T]`.
+///
+/// # Notice
+///
+/// The existence of this trait is an implementation detail.
+///
+/// **Please do NOT use this trait as a generic bound in your code.**
 pub trait SliceArrayExt<T> {
-    /// View `&[T]` as `&[T;n]`, panicking on incorrect length.
+    /// View `&[T]` as `&[T; n]`.
     fn as_array<V: IsSliceomorphic<Element=T>>(&self) -> &V;
-    /// View `&mut [T]` as `&mut [T;n]`, panicking on incorrect length.
+
+    /// View `&mut [T]` as `&mut [T;n]`.
     fn as_mut_array<V: IsSliceomorphic<Element=T>>(&mut self) -> &mut V;
 }
 
