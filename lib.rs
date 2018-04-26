@@ -224,6 +224,13 @@ pub trait SliceArrayExt<T> {
 
     /// View `&mut [T]` as `&mut [T;n]`.
     fn as_mut_array<V: IsSliceomorphic<Element=T>>(&mut self) -> &mut V;
+
+    /// Clone `&[T]` to `[T; n]`.
+    ///
+    /// This is provided because `.as_array().clone()` tends to cause trouble for
+    /// type inference.
+    fn to_array<V: IsSliceomorphic<Element=T>>(&self) -> V where V: Clone
+    { self.as_array::<V>().clone() }
 }
 
 impl<V: IsSliceomorphic> SliceFlatExt<V::Element> for [V] {
@@ -328,6 +335,8 @@ mod tests {
         { let _: &[[[(); 3]; 3]] = v.nest().nest(); }
         { let _: &mut [[(); 3]; 3] = v.nest_mut().as_mut_array(); }
         { let _: &mut [[[(); 3]; 3]] = v.nest_mut().nest_mut(); }
+        { let _: [[(); 3]; 3] = v.nest().to_array(); }
+        { let _: Vec<[(); 3]> = v.nest().to_vec(); }
     }
 
     mod failures {
