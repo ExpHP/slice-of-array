@@ -98,15 +98,23 @@ pub mod prelude {
 ///
 /// # Safety
 ///
-/// Unsafe code relies on a number of properties of arrays for any
-/// type that implements this trait.  These properties are left
-/// unspecified and may change on a whim.
+/// For any implementation, `Self` must have the same size and
+/// alignment as `[Self::Element; Self::LEN]`.  Furthermore, you
+/// must be comfortable with the possibility of `[Self]` being
+/// reinterpreted bitwise as `[[Self::Element; Self::LEN]]` (or
+/// vice versa) in any possible context.
 ///
 /// # Notice
 ///
-/// **Please do NOT use this trait as a generic bound in your code.**
+/// **Please do NOT use this trait in public interfaces in your code.**
 ///
-/// In fact, I would rather you copied and pasted it into your own code.
+/// `slice_of_array` is not yet 1.0, is not ready (or even designed)
+/// to be used as a public dependency.
+///
+/// However, feel free to implement this trait on your own private
+/// wrapper types around arrays. (this use case is explicitly supported
+/// because the author does it himself, and quite frankly, it's pretty
+/// convenient!)
 pub unsafe trait IsSliceomorphic: Sized {
     type Element;
     const LEN: usize;
