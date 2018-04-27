@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/slice-of-array/0.1.1")]
+#![doc(html_root_url = "https://docs.rs/slice-of-array/0.2.0")]
 
 //! Extension traits for viewing a slice as a slice of arrays or vice versa.
 //!

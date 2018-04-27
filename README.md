@@ -4,7 +4,7 @@ Extension traits on `[T]` for converting to and from `[[T; n]]`.
 
 ```toml
 [dependencies]
-slice-of-array = "0.1"
+slice-of-array = "0.2"
 ```
 
 ```rust
@@ -50,3 +50,5 @@ It's main purpose is for bridging between APIs that work on flattened vectors an
 Yikes!  You're messing with metadata that's going to be handed to the allocator when your vec falls out of scope, and I don't think the allocator likes surprises.  I don't want that on my conscience!
 
 If you're convinced that this problem has a solution, then please submit a PR.
+
+## [Changelog](CHANGELOG.md)
