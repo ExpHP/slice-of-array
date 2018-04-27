@@ -58,7 +58,7 @@
 //! with flattened slices and APIs that work with slices of arrays.
 //!
 //! Zero-cost conversions in owned data (e.g. between `Vec<T>`
-//! and `Vec<[T;n]>`) are not provided, and are probably impossible
+//! and `Vec<[T; n]>`) are not provided, and are probably impossible
 //! in consideration of e.g. custom allocators. If you need to
 //! convert between such types, you can use these traits in tandem
 //! with `<[T]>::to_vec` to perform a copy:
@@ -191,10 +191,10 @@ pub trait SliceFlatExt<T> {
 ///
 /// **Please do NOT use this trait as a generic bound in your code.**
 pub trait SliceNestExt<T> {
-    /// View `&[T]` as `&[[T;n]]` without copying.
+    /// View `&[T]` as `&[[T; n]]` without copying.
     fn nest<V: IsSliceomorphic<Element=T>>(&self) -> &[V];
 
-    /// View `&mut [T]` as `&mut [[T;n]]` without copying.
+    /// View `&mut [T]` as `&mut [[T; n]]` without copying.
     fn nest_mut<V: IsSliceomorphic<Element=T>>(&mut self) -> &mut [V];
 }
 
@@ -222,7 +222,7 @@ pub trait SliceArrayExt<T> {
     /// View `&[T]` as `&[T; n]`.
     fn as_array<V: IsSliceomorphic<Element=T>>(&self) -> &V;
 
-    /// View `&mut [T]` as `&mut [T;n]`.
+    /// View `&mut [T]` as `&mut [T; n]`.
     fn as_mut_array<V: IsSliceomorphic<Element=T>>(&mut self) -> &mut V;
 
     /// Clone `&[T]` to `[T; n]`.
