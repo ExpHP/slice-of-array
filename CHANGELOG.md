@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Added more implementations of the trait up to size 128, and some powers of 2 and 10.
 
 ## [0.2.0] - 2018-04-26
 ### Added
