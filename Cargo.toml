@@ -16,4 +16,4 @@ path = "lib.rs"
 [dependencies]
 
 [dev-dependencies]
-version-sync = "0.3"
+version-sync = "0.9"
