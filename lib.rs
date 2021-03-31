@@ -24,7 +24,7 @@
 //! # //        Almost makes a case for providing `.as_slice()`
 //! # //        as an explicit form of this coercion.
 //! #
-//! # use ::slice_of_array::prelude::*;
+//! # use slice_of_array::prelude::*;
 //! # let _ = || {
 //! #     let x: [[i32; 6]; 5] = unimplemented!();
 //! #     let _: &[[[i32; 3]; 2]; 5] =
@@ -48,7 +48,7 @@
 //!
 //! // note: this requires an annotation only due to polymorphism in PartialEq
 //! let slc = vec.nest::<[_; 2]>();
-//! assert_eq!(slc, &[[[2i32, 2, 2], [7, 7, 7]], [[ 4, 4, 4], [1, 1, 1]]]);
+//! assert_eq!(slc, &[[[2i32, 2, 2], [7, 7, 7]], [[4, 4, 4], [1, 1, 1]]]);
 //! ```
 //!
 //! [`nest`] and [`as_array`] panic on failure rather than returning options.
@@ -72,15 +72,24 @@
 //! assert_eq!(flattened, vec![2i32, 2, 2, 7, 7, 7]);
 //! ```
 //!
-//! [`nest`]: trait.SliceNestExt.html#tymethod.nest
-//! [`flat`]: trait.SliceFlatExt.html#tymethod.flat
-//! [`as_array`]: trait.SliceArrayExt.html#tymethod.as_array
-
-#[cfg(test)]
-#[macro_use]
-extern crate version_sync;
+//! [`nest`]: [`SliceNestExt::nest`]
+//! [`flat`]: [`SliceFlatExt::flat`]
+//! [`as_array`]: [`SliceArrayExt::as_array`]
 
 pub mod prelude {
+    //! This module contains extension traits from `slice_of_array`.
+    //!
+    //! It is meant to be glob imported, by users who may find it obnoxious to remember
+    //! the precise names of the traits that each method belongs to.
+    //!
+    //! ```rust
+    //! use slice_of_array::prelude::*;
+    //! ```
+    //!
+    //! `slice_of_array` follows an opinionated policy on what preludes should and should
+    //! not contain. This prelude will never contain anything that the user will likely
+    //! want to refer to by name.
+
     pub use super::SliceFlatExt;
     pub use super::SliceNestExt;
     pub use super::SliceArrayExt;
@@ -112,9 +121,9 @@ pub mod prelude {
 /// to be used as a public dependency.
 ///
 /// However, feel free to implement this trait on your own private
-/// wrapper types around arrays. (this use case is explicitly supported
-/// because the author does it himself, and quite frankly, it's pretty
-/// convenient!)
+/// wrapper types around arrays and/or `#[repr(C)]` structs. (these use
+/// cases are explicitly supported because the author does it himself,
+/// and quite frankly, it's pretty convenient!)
 pub unsafe trait IsSliceomorphic: Sized {
     type Element;
     const LEN: usize;
@@ -153,11 +162,13 @@ fn validate_some_assumptions<V: IsSliceomorphic>() {
 
     assert_eq!(
         align_of::<V::Element>(),
-        align_of::<V>());
+        align_of::<V>(),
+    );
 
     assert_eq!(
         V::LEN * size_of::<V::Element>(),
-        size_of::<V>());
+        size_of::<V>(),
+    );
 }
 
 /// Permits viewing a slice of arrays as a flat slice.
@@ -281,9 +292,11 @@ impl<V: IsSliceomorphic> SliceFlatExt<V::Element> for [V] {
 impl<T> SliceNestExt<T> for [T] {
     fn nest<V: IsSliceomorphic<Element=T>>(&self) -> &[V] {
         validate_some_assumptions::<V>();
-        assert_eq!(0, self.len() % V::LEN,
+        assert_eq!(
+            0, self.len() % V::LEN,
             "cannot view slice of length {} as &[[_; {}]]",
-            self.len(), V::LEN);
+            self.len(), V::LEN,
+        );
 
         // UNSAFETY: (::std::slice::from_raw_parts)
         // - pointer must be non-null (even for zero-length)
@@ -298,9 +311,11 @@ impl<T> SliceNestExt<T> for [T] {
 
     fn nest_mut<V: IsSliceomorphic<Element=T>>(&mut self) -> &mut [V] {
         validate_some_assumptions::<V>();
-        assert_eq!(0, self.len() % V::LEN,
+        assert_eq!(
+            0, self.len() % V::LEN,
             "cannot view slice of length {} as &mut [[_; {}]]",
-            self.len(), V::LEN);
+            self.len(), V::LEN,
+        );
 
         // UNSAFETY: (::std::slice::from_raw_parts_mut)
         // - pointer must be non-null (even for zero-length)
@@ -317,17 +332,21 @@ impl<T> SliceNestExt<T> for [T] {
 
 impl<T> SliceArrayExt<T> for [T] {
     fn as_array<V: IsSliceomorphic<Element=T>>(&self) -> &V {
-        assert_eq!(self.len(), V::LEN,
+        assert_eq!(
+            self.len(), V::LEN,
             "cannot view slice of length {} as &[_; {}]",
-            self.len(), V::LEN);
+            self.len(), V::LEN,
+        );
 
         &self.nest()[0]
     }
 
     fn as_mut_array<V: IsSliceomorphic<Element=T>>(&mut self) -> &mut V {
-        assert_eq!(self.len(), V::LEN,
+        assert_eq!(
+            self.len(), V::LEN,
             "cannot view slice of length {} as &mut [_; {}]",
-            self.len(), V::LEN);
+            self.len(), V::LEN,
+        );
 
         &mut self.nest_mut()[0]
     }
@@ -404,12 +423,12 @@ mod tests {
     mod dox {
         #[test]
         fn test_readme_version() {
-            assert_markdown_deps_updated!("README.md");
+            version_sync::assert_markdown_deps_updated!("README.md");
         }
 
         #[test]
         fn test_html_root_url() {
-            assert_html_root_url_updated!("lib.rs");
+            version_sync::assert_html_root_url_updated!("lib.rs");
         }
     }
 }

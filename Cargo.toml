@@ -9,6 +9,7 @@ keywords = ["slice", "util", "cast", "flatten", "nest"]
 categories = ["data-structures"]
 readme = "README.md"
 license = "Unlicense"
+edition = "2018"
 
 [lib]
 path = "lib.rs"
