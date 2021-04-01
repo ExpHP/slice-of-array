@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2018-11-11
+### Added
+- `IsSliceomorphic` is now implemented for **all** array sizes.  Hurrah!
+- ...this includes `[T; 0]`, which couldn't be avoided.  **Any attempt to call `nest::<[_; 0]>()` will panic!**
+### Changed
+- The MSRV is bumped _significantly_ to 1.51 (the latest version of rust), for const generics.
+  > Normally, MSRV is not tracked for `slice_of_array`, but this seemed big enough to warrant a major version bump.
+
 ## [0.2.1] - 2018-11-11
 ### Added
 - Added more implementations of the trait up to size 128, and some powers of 2 and 10.
@@ -25,6 +33,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `<[T]>::as_array`
 - ...and `mut` variants.
 
-[Unreleased]: https://github.com/ExpHP/slice-of-array/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/ExpHP/slice-of-array/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/ExpHP/slice-of-array/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/ExpHP/slice-of-array/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/ExpHP/slice-of-array/compare/v0.1.1...v0.2.0
