@@ -19,7 +19,7 @@ let _: &[[i32; 2]; 2] = vec.as_array();
 
 **Use types like `&[[f64; 3]]` in your public interfaces without fear!**
 
-You'll be able to flatten that stuff just fine when delagating work to (insert your favorite linear algebra library here)!
+You'll be able to flatten that stuff just fine when delegating work to (insert your favorite linear algebra library here)!
 
 Not to mention everybody using your library will have no problem creating the necessary slice types to use your interface.
 
