@@ -76,6 +76,8 @@
 //! [`flat`]: [`SliceFlatExt::flat`]
 //! [`as_array`]: [`SliceArrayExt::as_array`]
 
+use std::slice;
+
 pub mod prelude {
     //! This module contains extension traits from `slice_of_array`.
     //!
@@ -98,12 +100,6 @@ pub mod prelude {
 /// Marker trait used in bounds of `Slice{Flat,Nest,Array}Ext`.
 ///
 /// This marks the array types approved for use with `slice_of_array`.
-///
-/// It is deliberately not implemented for arrays of size 0,
-/// because said traits are otherwise perfect isomorphisms for
-/// the inputs that they don't fail on;
-/// Having `.flat().nest()` turn a `&[[i32; 0]]` of length 18
-/// into a `&[[i32; 0]]` of length 0 gives me the heebie jeebies.
 ///
 /// # Safety
 ///
@@ -129,36 +125,15 @@ pub unsafe trait IsSliceomorphic: Sized {
     const LEN: usize;
 }
 
-macro_rules! impl_approved_array {
-    ($($n:tt)+) => {$(
-        unsafe impl<T> IsSliceomorphic for [T; $n] {
-            type Element = T;
-            const LEN: usize = $n;
-        }
-    )+};
-}
-
-impl_approved_array!{
-     1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20
-    21  22  23  24  25  26  27  28  29  30  31  32  43  44  45  46  47  48  49  50
-    51  52  53  54  55  56  57  58  59  60  61  62  63  64  65  66  67  68  69  70
-    71  72  73  74  75  76  77  78  79  80  81  82  83  84  85  86  87  88  89  90
-    91  92  93  94  95  96  97  98  99 100 101 102 103 104 105 106 107 108 109 110
-   111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127 128
-   256
-   512
-  1024
-  2048
-  4096
-  8192
-  1000
- 10000
+unsafe impl<T, const N: usize> IsSliceomorphic for [T; N] {
+    type Element = T;
+    const LEN: usize = N;
 }
 
 // Validate some known assumptions of IsSliceomorphic "at runtime,"
 //  in a manner which should get optimized into thin air.
-fn validate_some_assumptions<V: IsSliceomorphic>() {
-    use ::std::mem::{align_of, size_of};
+fn validate_alignment_and_size<V: IsSliceomorphic>() {
+    use std::mem::{align_of, size_of};
 
     assert_eq!(
         align_of::<V::Element>(),
@@ -176,15 +151,20 @@ fn validate_some_assumptions<V: IsSliceomorphic>() {
 /// # Implementors
 ///
 /// The methods are available on `&[[T; n]]` and `&mut [[T; n]]`
-/// for all `T`, and `1 <= n <= 128` (and a couple other sizes).
-/// Of course, they are also available on `Vec<[T; n]>` and any
-/// other type that derefs or unsizes to `[[T; n]]`.
+/// for all `T` and `n`. Of course, they are also available on
+/// `Vec<[T; n]>` and any other type that derefs or unsizes to `[[T; n]]`.
+///
+/// `&[[T; 0]]` does support being flattened into an empty slice, however,
+/// please do mind that the inverse operation [`SliceNestExt::nest`] will panic
+/// (as it cannot possibly recover the original length of the slice).
 ///
 /// # Notice
 ///
-/// The existence of this trait is an implementation detail.
+/// The existence of this trait is an implementation detail.  Future versions may
+/// split it up, merge or rename it.
+/// Therefore, **please do NOT use this trait as a generic bound in your code.**
 ///
-/// **Please do NOT use this trait as a generic bound in your code.**
+/// (Prefer `[V] where V: `[`IsSliceomorphic`]`<Element=T>` instead)
 pub trait SliceFlatExt<T> {
     /// View `&[[T; n]]` as `&[T]`.
     fn flat(&self) -> &[T];
@@ -208,11 +188,16 @@ pub trait SliceFlatExt<T> {
 /// Of course, they are also available on `Vec<T>` and any other type
 /// that derefs or unsizes to `[T]`.
 ///
+/// **The implementation for `N=0` panics!** (even if the length of the slice is
+/// zero, as in this case the length of the nested slice would be degenerate)
+///
 /// # Notice
 ///
-/// The existence of this trait is an implementation detail.
+/// The existence of this trait is an implementation detail.  Future versions may
+/// split it up, merge or rename it.
+/// Therefore, **please do NOT use this trait as a generic bound in your code.**
 ///
-/// **Please do NOT use this trait as a generic bound in your code.**
+/// (Prefer `<V> where V: `[`IsSliceomorphic`]`<Element=T>` instead)
 pub trait SliceNestExt<T> {
     /// View `&[T]` as `&[[T; n]]` without copying.
     fn nest<V: IsSliceomorphic<Element=T>>(&self) -> &[V];
@@ -238,9 +223,11 @@ pub trait SliceNestExt<T> {
 ///
 /// # Notice
 ///
-/// The existence of this trait is an implementation detail.
+/// The existence of this trait is an implementation detail.  Future versions may
+/// split it up, merge or rename it.
+/// Therefore, **please do NOT use this trait as a generic bound in your code.**
 ///
-/// **Please do NOT use this trait as a generic bound in your code.**
+/// (Prefer `V where V: `[`IsSliceomorphic`]`<Element=T>` instead)
 pub trait SliceArrayExt<T> {
     /// View `&[T]` as `&[T; n]`.
     fn as_array<V: IsSliceomorphic<Element=T>>(&self) -> &V;
@@ -264,8 +251,8 @@ impl<V: IsSliceomorphic> SliceFlatExt<V::Element> for [V] {
         // - pointer must be valid for given size
         // - lifetimes are unchecked
         unsafe {
-            validate_some_assumptions::<V>();
-            ::std::slice::from_raw_parts(
+            validate_alignment_and_size::<V>();
+            slice::from_raw_parts(
                 self.as_ptr() as *const _,
                 self.len() * V::LEN,
             )
@@ -280,8 +267,8 @@ impl<V: IsSliceomorphic> SliceFlatExt<V::Element> for [V] {
         // - lifetimes are unchecked
         // - aliasing guarantees of &mut are unchecked
         unsafe {
-            validate_some_assumptions::<V>();
-            ::std::slice::from_raw_parts_mut(
+            validate_alignment_and_size::<V>();
+            slice::from_raw_parts_mut(
                 self.as_mut_ptr() as *mut _,
                 self.len() * V::LEN,
             )
@@ -291,65 +278,84 @@ impl<V: IsSliceomorphic> SliceFlatExt<V::Element> for [V] {
 
 impl<T> SliceNestExt<T> for [T] {
     fn nest<V: IsSliceomorphic<Element=T>>(&self) -> &[V] {
-        validate_some_assumptions::<V>();
-        assert_eq!(
-            0, self.len() % V::LEN,
-            "cannot view slice of length {} as &[[_; {}]]",
-            self.len(), V::LEN,
-        );
+        validate_nest_assumptions::<V>(self.len(), "&");
 
-        // UNSAFETY: (::std::slice::from_raw_parts)
+        // UNSAFETY: (std::slice::from_raw_parts)
         // - pointer must be non-null (even for zero-length)
         // - pointer must be aligned
         // - pointer must be valid for given size
         // - lifetimes are unchecked
-        unsafe { ::std::slice::from_raw_parts(
+        unsafe { slice::from_raw_parts(
             self.as_ptr() as *const _,
             self.len() / V::LEN,
         )}
     }
 
     fn nest_mut<V: IsSliceomorphic<Element=T>>(&mut self) -> &mut [V] {
-        validate_some_assumptions::<V>();
-        assert_eq!(
-            0, self.len() % V::LEN,
-            "cannot view slice of length {} as &mut [[_; {}]]",
-            self.len(), V::LEN,
-        );
+        validate_nest_assumptions::<V>(self.len(), "&mut ");
 
-        // UNSAFETY: (::std::slice::from_raw_parts_mut)
+        // UNSAFETY: (std::slice::from_raw_parts_mut)
         // - pointer must be non-null (even for zero-length)
         // - pointer must be aligned
         // - pointer must be valid for given size
         // - lifetimes are unchecked
         // - aliasing guarantees of &mut are unchecked
-        unsafe { ::std::slice::from_raw_parts_mut(
-            self.as_ptr() as *mut _,
+        unsafe { slice::from_raw_parts_mut(
+            self.as_mut_ptr() as *mut _,
             self.len() / V::LEN,
         )}
     }
 }
 
+#[inline(always)]
+fn validate_nest_assumptions<V: IsSliceomorphic>(len: usize, prefix: &'static str) {
+    validate_alignment_and_size::<V>();
+    assert_ne!(
+        0, V::LEN,
+        "cannot nest arrays of length 0",
+    );
+    assert_eq!(
+        0, len % V::LEN,
+        "cannot view slice of length {} as {}[[_; {}]]",
+        len, prefix, V::LEN,
+    );
+}
+
 impl<T> SliceArrayExt<T> for [T] {
     fn as_array<V: IsSliceomorphic<Element=T>>(&self) -> &V {
-        assert_eq!(
-            self.len(), V::LEN,
-            "cannot view slice of length {} as &[_; {}]",
-            self.len(), V::LEN,
-        );
+        validate_as_array_assumptions::<V>(self.len(), "&");
 
-        &self.nest()[0]
+        // &self.nest()[0]  // <-- would not work for V::LEN = 0
+
+        // UNSAFETY: (<*const T>::as_ref)
+        // - pointer must be aligned
+        // - pointer must be valid for given size
+        // - lifetimes are unchecked
+        unsafe { (self.as_ptr() as *const V).as_ref().unwrap() }
     }
 
     fn as_mut_array<V: IsSliceomorphic<Element=T>>(&mut self) -> &mut V {
-        assert_eq!(
-            self.len(), V::LEN,
-            "cannot view slice of length {} as &mut [_; {}]",
-            self.len(), V::LEN,
-        );
+        validate_as_array_assumptions::<V>(self.len(), "&mut ");
 
-        &mut self.nest_mut()[0]
+        // &mut self.nest_mut()[0]  // <-- would not work for V::LEN = 0
+
+        // UNSAFETY: (<*mut T>::as_mut)
+        // - pointer must be aligned
+        // - pointer must be valid for given size
+        // - lifetimes are unchecked
+        // - aliasing guarantees of &mut are unchecked
+        unsafe { (self.as_mut_ptr() as *mut V).as_mut().unwrap() }
     }
+}
+
+#[inline(always)]
+fn validate_as_array_assumptions<V: IsSliceomorphic>(len: usize, prefix: &'static str) {
+    validate_alignment_and_size::<V>();
+    assert_eq!(
+        len, V::LEN,
+        "cannot view slice of length {} as {}[_; {}]",
+        len, prefix, V::LEN,
+    );
 }
 
 #[cfg(test)]
@@ -370,12 +376,26 @@ mod tests {
         { let _: Vec<[(); 3]> = v.nest().to_vec(); }
     }
 
+    #[test]
+    fn test_flat_zero() {
+        let mut v = vec![[(); 0]; 6];
+        assert_eq!(v.flat(), &[] as &[()]);
+        assert_eq!(v.flat_mut(), &[] as &[()]);
+    }
+
+    #[test]
+    fn test_array_zero() {
+        let mut v: Vec<[(); 0]> = vec![[], [], [], []];
+        assert_eq!(v.flat(), &[] as &[()]);
+        assert_eq!(v.flat_mut(), &[] as &[()]);
+    }
+
     mod failures {
         use super::super::*;
 
         #[test]
         #[should_panic(expected = "cannot view slice of length 8")]
-        fn fail_nest_not_multiple() {
+        fn nest_not_multiple() {
             let v = vec![(); 8];
             let _: &[[(); 3]] = v.nest();
         }
@@ -385,6 +405,20 @@ mod tests {
         fn nest_mut_not_multiple() {
             let mut v = vec![(); 8];
             let _: &mut [[(); 3]] = v.nest_mut();
+        }
+
+        #[test]
+        #[should_panic(expected = "cannot nest arrays of length 0")]
+        fn nest_zero() {
+            let v: Vec<()> = vec![];
+            let _: &[[(); 0]] = v.nest();
+        }
+
+        #[test]
+        #[should_panic(expected = "cannot nest arrays of length 0")]
+        fn nest_mut_zero() {
+            let mut v: Vec<()> = vec![];
+            let _: &mut [[(); 0]] = v.nest_mut();
         }
 
         // bad array size tests;
@@ -406,6 +440,13 @@ mod tests {
         }
 
         #[test]
+        #[should_panic(expected = "cannot view slice of length 6")]
+        fn as_array_bad_zero() {
+            let v = vec![(); 6];
+            let _: &[(); 0] = v.as_array();
+        }
+
+        #[test]
         #[should_panic(expected = "cannot view slice of length 1")]
         fn as_mut_array_too_small() {
             let mut v = vec![(); 1];
@@ -417,6 +458,13 @@ mod tests {
         fn as_mut_array_too_large() {
             let mut v = vec![(); 6];
             let _: &mut [(); 3] = v.as_mut_array();
+        }
+
+        #[test]
+        #[should_panic(expected = "cannot view slice of length 6")]
+        fn as_mut_array_bad_zero() {
+            let mut v = vec![(); 6];
+            let _: &[(); 0] = v.as_mut_array();
         }
     }
 
