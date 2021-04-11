@@ -1,4 +1,5 @@
 #![doc(html_root_url = "https://docs.rs/slice-of-array/0.3.0")]
+#![no_std]
 
 //! Extension traits for viewing a slice as a slice of arrays or vice versa.
 //!
@@ -76,7 +77,7 @@
 //! [`flat`]: SliceFlatExt::flat
 //! [`as_array`]: SliceArrayExt::as_array
 
-use std::slice;
+use core::slice;
 
 pub mod prelude {
     //! This module contains extension traits from `slice_of_array`.
@@ -133,7 +134,7 @@ unsafe impl<T, const N: usize> IsSliceomorphic for [T; N] {
 // Validate some known assumptions of IsSliceomorphic "at runtime,"
 //  in a manner which should get optimized into thin air.
 fn validate_alignment_and_size<V: IsSliceomorphic>() {
-    use std::mem::{align_of, size_of};
+    use core::mem::{align_of, size_of};
 
     assert_eq!(
         align_of::<V::Element>(),
@@ -245,7 +246,7 @@ pub trait SliceArrayExt<T> {
 
 impl<V: IsSliceomorphic> SliceFlatExt<V::Element> for [V] {
     fn flat(&self) -> &[V::Element] {
-        // UNSAFETY: (::std::slice::from_raw_parts)
+        // UNSAFETY: (::core::slice::from_raw_parts)
         // - pointer must be non-null (even for zero-length)
         // - pointer must be aligned
         // - pointer must be valid for given size
@@ -260,7 +261,7 @@ impl<V: IsSliceomorphic> SliceFlatExt<V::Element> for [V] {
     }
 
     fn flat_mut(&mut self) -> &mut [V::Element] {
-        // UNSAFETY: (::std::slice::from_raw_parts_mut)
+        // UNSAFETY: (::core::slice::from_raw_parts_mut)
         // - pointer must be non-null (even for zero-length)
         // - pointer must be aligned
         // - pointer must be valid for given size
@@ -280,7 +281,7 @@ impl<T> SliceNestExt<T> for [T] {
     fn nest<V: IsSliceomorphic<Element=T>>(&self) -> &[V] {
         validate_nest_assumptions::<V>(self.len(), "&");
 
-        // UNSAFETY: (std::slice::from_raw_parts)
+        // UNSAFETY: (core::slice::from_raw_parts)
         // - pointer must be non-null (even for zero-length)
         // - pointer must be aligned
         // - pointer must be valid for given size
@@ -294,7 +295,7 @@ impl<T> SliceNestExt<T> for [T] {
     fn nest_mut<V: IsSliceomorphic<Element=T>>(&mut self) -> &mut [V] {
         validate_nest_assumptions::<V>(self.len(), "&mut ");
 
-        // UNSAFETY: (std::slice::from_raw_parts_mut)
+        // UNSAFETY: (core::slice::from_raw_parts_mut)
         // - pointer must be non-null (even for zero-length)
         // - pointer must be aligned
         // - pointer must be valid for given size
