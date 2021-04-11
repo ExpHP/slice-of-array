@@ -72,9 +72,9 @@
 //! assert_eq!(flattened, vec![2i32, 2, 2, 7, 7, 7]);
 //! ```
 //!
-//! [`nest`]: [`SliceNestExt::nest`]
-//! [`flat`]: [`SliceFlatExt::flat`]
-//! [`as_array`]: [`SliceArrayExt::as_array`]
+//! [`nest`]: SliceNestExt::nest
+//! [`flat`]: SliceFlatExt::flat
+//! [`as_array`]: SliceArrayExt::as_array
 
 use std::slice;
 
