@@ -12,28 +12,28 @@ jobs:
     strategy:
       matrix:
         toolchain: [ stable, nightly ]
-        use_std: [ y, n ]
+        use_std: [ std, nostd ]
     steps:
       - uses: actions/checkout@v2
 
       # Test with std
       - uses: actions-rs/toolchain@v1
         name: Toolchain setup
-        if: ${{ matrix.use_std == 'y' }}
+        if: ${{ matrix.use_std == 'std' }}
         with:
           profile: minimal
           toolchain: ${{ matrix.toolchain }}
           override: true
       - uses: actions-rs/cargo@v1
         name: Test
-        if: ${{ matrix.use_std == 'y' }}
+        if: ${{ matrix.use_std == 'std' }}
         with:
           command: test
 
       # Test on nostd
       - uses: actions-rs/toolchain@v1
         name: Toolchain setup
-        if: ${{ matrix.use_std == 'n' }}
+        if: ${{ matrix.use_std == 'nostd' }}
         with:
           profile: minimal
           toolchain: ${{ matrix.toolchain }}
@@ -41,7 +41,7 @@ jobs:
           override: true
       - uses: actions-rs/cargo@v1
         name: Test
-        if: ${{ matrix.use_std == 'n' }}
+        if: ${{ matrix.use_std == 'nostd' }}
         with:
           command: build
           args: --target thumbv6m-none-eabi --no-default-features
