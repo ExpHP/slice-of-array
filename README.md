@@ -1,3 +1,6 @@
+[![Crates.io](https://img.shields.io/crates/v/slice-of-array.svg)](https://crates.io/crates/slice-of-array)
+[![Docs.rs](https://docs.rs/slice-of-array/badge.svg)](https://docs.rs/slice-of-array/*/slice_of_array/)
+
 # `slice-of-array`
 
 Extension traits on `[T]` for converting to and from `[[T; n]]`.
