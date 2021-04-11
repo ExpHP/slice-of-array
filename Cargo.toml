@@ -1,11 +1,11 @@
 [package]
 name = "slice-of-array"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Michael Lamparski <diagonaldevice@gmail.com>"]
 documentation = "https://docs.rs/slice-of-array"
 repository = "https://github.com/ExpHP/slice-of-array"
 description = "Extension traits for casting between slices and slices of arrays. (&[T] <-> &[[T; n]])"
-keywords = ["slice", "util", "cast", "flatten", "nest"]
+keywords = ["slice", "util", "no_std", "flatten", "nest"]
 categories = ["data-structures"]
 readme = "README.md"
 license = "Unlicense"
