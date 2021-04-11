@@ -6,13 +6,6 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
-  - uses: actions/checkout@v2
-  - name: Install latest nightly
-    uses: actions-rs/toolchain@v1
-    with:
-      toolchain: nightly
-      override: true
-
   check:
     name: Test
     runs-on: ubuntu-latest
