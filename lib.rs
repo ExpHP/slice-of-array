@@ -1,5 +1,5 @@
 #![doc(html_root_url = "https://docs.rs/slice-of-array/0.3.0")]
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 //! Extension traits for viewing a slice as a slice of arrays or vice versa.
 //!
