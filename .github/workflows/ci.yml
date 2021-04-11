@@ -30,7 +30,7 @@ jobs:
         with:
           command: test
 
-      # Test on nostd
+      # Check on nostd
       - uses: actions-rs/toolchain@v1
         name: Toolchain setup
         if: ${{ matrix.use_std == 'nostd' }}
@@ -40,11 +40,11 @@ jobs:
           target: thumbv6m-none-eabi
           override: true
       - uses: actions-rs/cargo@v1
-        name: Test
+        name: Check (nostd)
         if: ${{ matrix.use_std == 'nostd' }}
         with:
-          command: build
-          args: --target thumbv6m-none-eabi --no-default-features
+          command: check
+          args: --target thumbv6m-none-eabi
 
   doc-check:
     name: Doc check
