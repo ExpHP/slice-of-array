@@ -28,7 +28,7 @@ jobs:
         name: Test
         if: ${{ matrix.use_std == 'std' }}
         with:
-          command: test
+          command: test --features=std
 
       # Check on nostd
       - uses: actions-rs/toolchain@v1
