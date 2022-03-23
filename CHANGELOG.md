@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- `flat` will now detect integer overflow in obscure edge cases involving ZSTs.
 
 ## [0.3.1] - 2021-04-11
 ### Added

@@ -149,6 +149,11 @@ fn validate_alignment_and_size<V: IsSliceomorphic>() {
 
 /// Permits viewing a slice of arrays as a flat slice.
 ///
+/// # Panics
+///
+/// Will panic if the new length exceeds `usize::MAX`.
+/// (in practice, this can only happen with zero-sized types)
+///
 /// # Implementors
 ///
 /// The methods are available on `&[[T; n]]` and `&mut [[T; n]]`
@@ -246,21 +251,24 @@ pub trait SliceArrayExt<T> {
 
 impl<V: IsSliceomorphic> SliceFlatExt<V::Element> for [V] {
     fn flat(&self) -> &[V::Element] {
+        let new_len = checked_compute_flattened_len::<V>(self.len());
+
         // UNSAFETY: (::core::slice::from_raw_parts)
         // - pointer must be non-null (even for zero-length)
         // - pointer must be aligned
         // - pointer must be valid for given size
         // - lifetimes are unchecked
         unsafe {
-            validate_alignment_and_size::<V>();
             slice::from_raw_parts(
                 self.as_ptr() as *const _,
-                self.len() * V::LEN,
+                new_len,
             )
         }
     }
 
     fn flat_mut(&mut self) -> &mut [V::Element] {
+        let new_len = checked_compute_flattened_len::<V>(self.len());
+
         // UNSAFETY: (::core::slice::from_raw_parts_mut)
         // - pointer must be non-null (even for zero-length)
         // - pointer must be aligned
@@ -268,18 +276,31 @@ impl<V: IsSliceomorphic> SliceFlatExt<V::Element> for [V] {
         // - lifetimes are unchecked
         // - aliasing guarantees of &mut are unchecked
         unsafe {
-            validate_alignment_and_size::<V>();
             slice::from_raw_parts_mut(
                 self.as_mut_ptr() as *mut _,
-                self.len() * V::LEN,
+                new_len,
             )
         }
     }
 }
 
+#[inline(always)]
+fn checked_compute_flattened_len<V: IsSliceomorphic>(len: usize) -> usize {
+    validate_alignment_and_size::<V>();
+
+    if core::mem::size_of::<V::Element>() == 0 {
+        usize::checked_mul(len, V::LEN)
+            .expect("overflow when computing length of flattened array")
+    } else {
+        // Given that each value occupies at least one byte, the mere existence
+        // of the slice ensures that this will not overflow.
+        len * V::LEN
+    }
+}
+
 impl<T> SliceNestExt<T> for [T] {
     fn nest<V: IsSliceomorphic<Element=T>>(&self) -> &[V] {
-        validate_nest_assumptions::<V>(self.len(), "&");
+        let new_len = checked_compute_nested_len::<V>(self.len(), "&");
 
         // UNSAFETY: (core::slice::from_raw_parts)
         // - pointer must be non-null (even for zero-length)
@@ -288,12 +309,12 @@ impl<T> SliceNestExt<T> for [T] {
         // - lifetimes are unchecked
         unsafe { slice::from_raw_parts(
             self.as_ptr() as *const _,
-            self.len() / V::LEN,
+            new_len,
         )}
     }
 
     fn nest_mut<V: IsSliceomorphic<Element=T>>(&mut self) -> &mut [V] {
-        validate_nest_assumptions::<V>(self.len(), "&mut ");
+        let new_len = checked_compute_nested_len::<V>(self.len(), "&mut ");
 
         // UNSAFETY: (core::slice::from_raw_parts_mut)
         // - pointer must be non-null (even for zero-length)
@@ -303,13 +324,13 @@ impl<T> SliceNestExt<T> for [T] {
         // - aliasing guarantees of &mut are unchecked
         unsafe { slice::from_raw_parts_mut(
             self.as_mut_ptr() as *mut _,
-            self.len() / V::LEN,
+            new_len,
         )}
     }
 }
 
 #[inline(always)]
-fn validate_nest_assumptions<V: IsSliceomorphic>(len: usize, prefix: &'static str) {
+fn checked_compute_nested_len<V: IsSliceomorphic>(len: usize, prefix: &str) -> usize {
     validate_alignment_and_size::<V>();
     assert_ne!(
         0, V::LEN,
@@ -320,6 +341,8 @@ fn validate_nest_assumptions<V: IsSliceomorphic>(len: usize, prefix: &'static st
         "cannot view slice of length {} as {}[[_; {}]]",
         len, prefix, V::LEN,
     );
+
+    len / V::LEN
 }
 
 impl<T> SliceArrayExt<T> for [T] {
@@ -350,7 +373,7 @@ impl<T> SliceArrayExt<T> for [T] {
 }
 
 #[inline(always)]
-fn validate_as_array_assumptions<V: IsSliceomorphic>(len: usize, prefix: &'static str) {
+fn validate_as_array_assumptions<V: IsSliceomorphic>(len: usize, prefix: &str) {
     validate_alignment_and_size::<V>();
     assert_eq!(
         len, V::LEN,
@@ -380,6 +403,17 @@ mod tests {
     }
 
     #[test]
+    fn test_flat_zst_and_non_zst() {
+        let v: &mut [_] = &mut [[(); 234]; 456];
+        assert_eq!(v.flat(), &[(); 234*456] as &[()]);
+        assert_eq!(v.flat_mut(), &[(); 234*456] as &[()]);
+
+        let v: &mut [_] = &mut [[1; 23]; 45];
+        assert_eq!(v.flat(), &[1; 23*45] as &[i32]);
+        assert_eq!(v.flat_mut(), &[1; 23*45] as &[i32]);
+    }
+
+    #[test]
     fn test_flat_zero() {
         let v: &mut [[(); 0]] = &mut [[(); 0]; 6];
         assert_eq!(v.flat(), &[] as &[()]);
@@ -395,6 +429,24 @@ mod tests {
 
     mod failures {
         use super::super::*;
+
+        // Two usizes that overflow when multiplied together.
+        const BIG_1: usize = 0x30;
+        const BIG_2: usize = usize::MAX >> 4;
+
+        #[test]
+        #[should_panic(expected = "overflow when computing length")]
+        fn flat_zst_overflow() {
+            let v: &[_] = &[[(); BIG_1]; BIG_2];
+            let _: &[()] = v.flat();
+        }
+
+        #[test]
+        #[should_panic(expected = "overflow when computing length")]
+        fn flat_mut_zst_overflow() {
+            let v: &mut [_] = &mut [[(); BIG_1]; BIG_2];
+            let _: &mut [()] = v.flat_mut();
+        }
 
         #[test]
         #[should_panic(expected = "cannot view slice of length 8")]
