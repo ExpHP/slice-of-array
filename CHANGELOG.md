@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+(there are currently no unreleased changes)
+
+## [0.3.2] - 2022-03-23
 ### Changed
 - `flat` will now detect integer overflow in obscure edge cases involving ZSTs.
 
@@ -42,7 +46,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `<[T]>::as_array`
 - ...and `mut` variants.
 
-[Unreleased]: https://github.com/ExpHP/slice-of-array/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/ExpHP/slice-of-array/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/ExpHP/slice-of-array/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/ExpHP/slice-of-array/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/ExpHP/slice-of-array/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/ExpHP/slice-of-array/compare/v0.2.0...v0.2.1

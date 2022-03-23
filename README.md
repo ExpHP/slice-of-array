@@ -7,7 +7,7 @@ Extension traits on `[T]` for converting to and from `[[T; n]]`.
 
 ```toml
 [dependencies]
-slice-of-array = "0.3.1"
+slice-of-array = "0.3.2"
 ```
 
 ```rust
