@@ -367,26 +367,28 @@ mod tests {
     fn inference_lattice() {
         // Checks that chaining nest().nest() or nest().as_array()
         // can be done without explicit annotations on the first method call.
-        let mut v = vec![(); 9];
+        let v: &mut [()] = &mut [(); 9];
 
         { let _: &[[(); 3]; 3] = v.nest().as_array(); }
         { let _: &[[[(); 3]; 3]] = v.nest().nest(); }
         { let _: &mut [[(); 3]; 3] = v.nest_mut().as_mut_array(); }
         { let _: &mut [[[(); 3]; 3]] = v.nest_mut().nest_mut(); }
         { let _: [[(); 3]; 3] = v.nest().to_array(); }
+
+        #[cfg(feature = "std")]
         { let _: Vec<[(); 3]> = v.nest().to_vec(); }
     }
 
     #[test]
     fn test_flat_zero() {
-        let mut v = vec![[(); 0]; 6];
+        let v: &mut [[(); 0]] = &mut [[(); 0]; 6];
         assert_eq!(v.flat(), &[] as &[()]);
         assert_eq!(v.flat_mut(), &[] as &[()]);
     }
 
     #[test]
     fn test_array_zero() {
-        let mut v: Vec<[(); 0]> = vec![[], [], [], []];
+        let v: &mut [[(); 0]] = &mut [[], [], [], []];
         assert_eq!(v.flat(), &[] as &[()]);
         assert_eq!(v.flat_mut(), &[] as &[()]);
     }
@@ -397,28 +399,28 @@ mod tests {
         #[test]
         #[should_panic(expected = "cannot view slice of length 8")]
         fn nest_not_multiple() {
-            let v = vec![(); 8];
+            let v: &[_] = &[(); 8];
             let _: &[[(); 3]] = v.nest();
         }
 
         #[test]
         #[should_panic(expected = "cannot view slice of length 8")]
         fn nest_mut_not_multiple() {
-            let mut v = vec![(); 8];
+            let v: &mut [_] = &mut [(); 8];
             let _: &mut [[(); 3]] = v.nest_mut();
         }
 
         #[test]
         #[should_panic(expected = "cannot nest arrays of length 0")]
         fn nest_zero() {
-            let v: Vec<()> = vec![];
+            let v: &[_] = &[(); 0];
             let _: &[[(); 0]] = v.nest();
         }
 
         #[test]
         #[should_panic(expected = "cannot nest arrays of length 0")]
         fn nest_mut_zero() {
-            let mut v: Vec<()> = vec![];
+            let v: &mut [_] = &mut [(); 0];
             let _: &mut [[(); 0]] = v.nest_mut();
         }
 
@@ -429,42 +431,42 @@ mod tests {
         #[test]
         #[should_panic(expected = "cannot view slice of length 1")]
         fn as_array_too_small() {
-            let v = vec![(); 1];
+            let v: &[_] = &[(); 1];
             let _: &[(); 3] = v.as_array();
         }
 
         #[test]
         #[should_panic(expected = "cannot view slice of length 6")]
         fn as_array_too_large() {
-            let v = vec![(); 6];
+            let v: &[_] = &[(); 6];
             let _: &[(); 3] = v.as_array();
         }
 
         #[test]
         #[should_panic(expected = "cannot view slice of length 6")]
         fn as_array_bad_zero() {
-            let v = vec![(); 6];
+            let v: &[_] = &[(); 6];
             let _: &[(); 0] = v.as_array();
         }
 
         #[test]
         #[should_panic(expected = "cannot view slice of length 1")]
         fn as_mut_array_too_small() {
-            let mut v = vec![(); 1];
+            let v: &mut [_] = &mut [(); 1];
             let _: &mut [(); 3] = v.as_mut_array();
         }
 
         #[test]
         #[should_panic(expected = "cannot view slice of length 6")]
         fn as_mut_array_too_large() {
-            let mut v = vec![(); 6];
+            let v: &mut [_] = &mut [(); 6];
             let _: &mut [(); 3] = v.as_mut_array();
         }
 
         #[test]
         #[should_panic(expected = "cannot view slice of length 6")]
         fn as_mut_array_bad_zero() {
-            let mut v = vec![(); 6];
+            let v: &mut [_] = &mut [(); 6];
             let _: &[(); 0] = v.as_mut_array();
         }
     }
